@@ -1,0 +1,16 @@
+## Table of Contents
+{% for i, (toplevel, subs) in (__toc__.index.items() | enumerate) %}
+{%-   if toplevel.startswith("__") %}
+{%-     continue %}
+{%-   endif %}
+{%-   set a = __toc__.glossary[toplevel].__a__ %}
+{{ i + 1 }}. [{{ toplevel }}](<#{{ a }}>)
+{%-   for sub in subs %}
+{%-     if sub.startswith("__") %}
+{%-       continue %}
+{%-     endif %}
+{%-     set a = __toc__.glossary[sub].__a__ %}
+{%-     set total_len = (sub | length + 4) + (a | length + 2) %}
+    * [{{ sub }}](<#{{ a }}>)
+{%-   endfor %}
+{%- endfor %}

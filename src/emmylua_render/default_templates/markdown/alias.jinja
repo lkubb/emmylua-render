@@ -1,0 +1,30 @@
+{%- section "`{}` (Alias)".format(alias.name) with anchor=alias.name literal=true %}
+
+**Type:** `{{ alias.typ | str }}`
+
+{%- if alias.desc %}
+
+{{ alias.desc | trim }}
+{%- endif %}
+
+{%- if alias.fields %}
+
+**Fields:**
+{%   for fname, field in alias.fields.items() %}
+{%-     if field.name.startswith("_") or field.is_optional %}
+{%-       continue %}
+{%-     endif %}
+{{-     field }}
+{%-   endfor %}
+{%-   for fname, field in alias.fields.items() %}
+{%-     if field.name.startswith("_") or not field.is_optional %}
+{%-       continue %}
+{%-     endif %}
+{{-     field }}
+{%-   endfor %}
+{%- endif %}
+{%- for fname, fun in alias.funs.items() %}
+{%    include "function.jinja" %}
+{%- endfor %}
+
+{%- endsection %}

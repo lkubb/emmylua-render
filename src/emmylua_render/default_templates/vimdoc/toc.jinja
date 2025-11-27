@@ -1,0 +1,30 @@
+{{ hr }}
+{%- set width = 78 %}
+Table of Contents
+{% for i, (toplevel, subs) in (__toc__.index.items() | enumerate) %}
+{%-   if toplevel.startswith("__") %}
+{%-     continue %}
+{%-   endif %}
+{%-   set a = __toc__.glossary[toplevel].__a__ %}
+{%-   set cnt_len = ((i + 1) | str | length) %}
+{%-   set total_len = (toplevel | length) + (a | length) + 2 + 2 + cnt_len %}
+{%-   if total_len >= width %}
+{{ i + 1 }}. {{ toplevel }}
+{{ " " * (cnt_len + 2) }}{{ "." * (width - ((a | length) - cnt_len - 1)) }} {{ a | wrap("|") }}
+{%-   else %}
+{{ i + 1 }}. {{ toplevel }} {{ "." * (width - total_len - 2) }} {{ a | wrap("|") }}
+{%-   endif %}
+{%-   for sub in subs %}
+{%-     if sub.startswith("__") %}
+{%-       continue %}
+{%-     endif %}
+{%-     set a = __toc__.glossary[sub].__a__ %}
+{%-     set total_len = (sub | length + 4) + (a | length + 2) %}
+{%-     if total_len >= width %}
+{{" " * (cnt_len + 2) }}• {{ sub }}
+{{ " " * (cnt_len + 4) }}{{ "." * (width - cnt_len - 7 - (a | length)) }} {{ a | wrap("|") }}
+{%-     else %}
+{{" " * (cnt_len + 2) }}• {{ sub }} {{ "." * (width - total_len - 3) }} {{ a | wrap("|") }}
+{%-     endif %}
+{%-   endfor %}
+{%- endfor %}

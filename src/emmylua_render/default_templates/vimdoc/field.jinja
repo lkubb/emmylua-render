@@ -1,0 +1,11 @@
+{%- if field.is_optional %}
+      • {{ field.name | wrap("{", "}") }}? {{ field.typ.inner | str | wrap("|" if field.typ.inner.kind.value is in ["class", "enum", "alias"] else "`") }}
+{%-   if field.desc %}
+          {{ field.desc | trim | vimdoc(indent=10) | trim }}
+{%-   endif %}
+{%- else %}
+      • {{ field.name | wrap("{", "}") }} {{ field.typ | str | wrap("|" if field.typ.kind.value is in ["class", "enum", "alias"] else "`") }}
+{%-   if field.desc %}
+          {{ field.desc | trim | vimdoc(indent=10) | trim }}
+{%-   endif %}
+{%- endif -%}

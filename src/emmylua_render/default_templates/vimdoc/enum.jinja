@@ -1,0 +1,12 @@
+{%- section "`{}` (Enum)".format(enum.name) with anchor=enum.name literal=true %}
+
+{%- if enum.desc %}
+
+    {{ enum.desc | trim | vimdoc(indent=4) | trim }}
+{% endif %}
+    Fields: ~
+{%- for fname, field in enum.fields.items() %}
+{{- field }}
+{%- endfor %}
+
+{%- endsection -%}

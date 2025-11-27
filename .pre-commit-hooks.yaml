@@ -1,0 +1,31 @@
+---
+# Pre-commit hook definitions for emmylua-render
+# See https://pre-commit.com for more information
+
+- id: emmylua-render
+  name: Render EmmyLua documentation
+  description: Generate documentation from EmmyLua annotations using Jinja templates
+  entry: emmylua-render --pre-commit
+  language: python
+  pass_filenames: false
+  always_run: true
+  # Files that would trigger regeneration
+  files: '\.(lua|jinja|j2)$'
+  # Additional dependencies needed by the hook
+  additional_dependencies:
+    - jinja2>=3.1.6
+    - lark>=1.3.1
+    - pydantic>=2.12.3
+  args: []
+  # All CLI arguments can be passed via args in .pre-commit-config.yaml:
+  # template (required positional argument)
+  # -x/--emmylua-doc-cli-path: Path to emmylua_doc_cli binary
+  # -e/--env: Environment variables (can be specified multiple times)
+  # -i/--input: Read JSON from file instead of invoking emmylua_doc_cli
+  # -o/--output: Output file path (defaults to doc/<project_name>.txt in pre-commit mode)
+  # -r/--project-root: Project root for emmylua_doc_cli
+  # -n/--project-name: Project name for vimdoc
+  # --no-expand: Glob patterns for types not to expand (multiple)
+  # --expand: Glob patterns for types to expand (multiple)
+  # -v/--verbose: Enable verbose output
+  # -f/--format: Output format (md or vim)

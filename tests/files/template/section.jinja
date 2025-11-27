@@ -1,0 +1,69 @@
+*{{ PROJECT }}.txt*                                      Sublime autosessions.
+
+{{ toc }}
+
+{%- section "Overview" with anchor=true %}
+Hi there, this is a test. What's up?
+
+{%-    section "Motivation of writing this plugin" with anchor="motivation" %}
+Some motivation blabla
+
+{%-      section "Subsection" with literal=true %}
+Some text
+that's very long indeed
+{%-     endsection %}
+{%-   endsection %}
+{%- endsection %}
+
+{%- section "Quickstart" with anchor="foobar" %}
+
+* Foo
+* Bar
+* Baz
+
+{%- anchor "foobar" %}
+* Foo
+* Bar
+* Baz
+{%- endanchor %}
+{%- endsection %}
+
+{%- section "Extract Lines" with markdown=true %}
+```lua
+{{ extract_lines("./src/emmylua_render/pandoc/vimdoc_writer.lua", start="^local function dump_table\\(tbl\\)$", stop="^end$") }}
+```
+{%- endsection %}
+
+{%- section "From Markdown" with markdown=true %}
+A flexible, project-focused autosession plugin for Neovim, unbound by the limits of `:mksession`.
+
+- **Very magic behavior**, but only _if you enable it_:
+  - Auto(create|save|restore) **sessions per dir/repo/branch**.
+  - Restore tabs, correct window **layout**, loaded **buffers**, cursor positions, buf/win/global **options**.
+  - Restore **unwritten buffer modifications** and **undo histories**, including for **unnamed buffers**, similar to Sublime Text.
+  - Restore **jumplists** and your current position for each (!) window separately.
+  - Restore **changelists** and your current position for all buffers.
+  - Restore all **loclists** for all windows, including the currently selected one and your current position in it + loclist windows.
+  - Restore all **quickfix** lists, including the currently selected one and your current position in it.
+  - Restore buffer-local and global **marks**.
+  - Restore cursor positions.
+  - Keep (session|project)-specific cmd/search/input/expr/debug **histories**.
+  - Autoswitch your session when you `git switch other-branch` or `:cd ../other-project` (for example).
+- You're still free to _tweak almost any aspect_ of this magic yourself:
+  - Some plugin windows are not restored? Write **custom extensions**.
+  - Want a project per directory in `$XDG_CONFIG_HOME`, per `basename`, per day of the week or per current byte of `/dev/random`? Go ahead! :)
+  - You can specify/filter/override anything that gets persisted, even per project or session.
+- You `:set nomagic`? There's a manual session API as well, purely in Lua and similar to [`resession.nvim`](https://github.com/stevearc/resession.nvim)
+  (Continuity started by forking it, a heartfelt thank you @stevearc! <3).
+- **Tab-scoped** sessions are possible (currently via the manual session API only).
+{%- endsection %}
+
+{%- section "API" with anchor="api" %}
+The following stuff is in here:
+
+{{- doc.filter("*", kind="enum") | first }}
+{{- doc.filter("*Opts", kind="alias") | first }}
+{{- doc.filter("continuity.util.git", kind="mod") | first }}
+{{- doc.get("continuity.core.Session.InitOptsWithMeta") }}
+{{- doc.get("continuity.core.Session") }}
+{%- endsection %}

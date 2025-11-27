@@ -1,0 +1,122 @@
+{%- set is_method = fun.is_meth or (((fun.parameters | first) or {}).name == "self") %}
+{%- set anch = fun.name ~ "()" %}
+{%- set sig = fun.name ~ (fun.params | map("first") | map("wrap", "{", "}") | join(", ") | wrap("(", ")")) %}
+{%- if cls %}
+{%-   set clsname = cls.name_parts | last %}
+{%-   set anch = cls.name ~ (":" if is_method else ".") ~ anch %}
+{%-   if is_method %}
+{%-     set sig = cls.name_parts | last ~ ":" ~ sig %}
+{%-   endif %}
+{%- endif %}
+{%- anchor anch with literal=true %}
+
+{{ sig }}
+{%-   if fun.deprecated %}
+    DEPRECATED: {{ fun.deprecated_reason | trim | vimdoc(indent=16) | trim }}
+{%-   endif %}
+{%-   if fun.desc %}
+    {{ fun.desc | trim | vimdoc(indent=4) | trim }}
+{%-   endif %}
+
+{%-   set tags = {} %}
+{%-   if fun.is_generic %}
+{%-     set generics = [] %}
+{%-     for generic, base in fun.generics %}
+{%-       if base %}
+{%-         do generics.append("`{}` (base: `{}`)".format(generic, base)) %}
+{%-       else %}
+{%-         do generics.append("`{}`".format(generic)) %}
+{%-       endif %}
+{%-     endfor %}
+{%-     do tags.update({"generic": generics | join(", ")})   %}
+{%-   endif %}
+{%-   if fun.is_nodiscard %}
+{%-     do tags.update({"nodiscard": fun.nodicard_message or ""})   %}
+{%-   endif %}
+{%-   if fun.is_async %}
+{%-     do tags.append({"async": ""})   %}
+{%-   endif %}
+{%-   do tags.update(fun.tags) %}
+{%-   if tags %}
+
+    Attributes: ~
+{%-     for tag, val in tags | dictsort %}
+{%-       if val %}
+      • {{ tag }}: {{ val }}
+{%-       else %}
+      • {{ tag }}
+{%-       endif %}
+{%-     endfor %}
+{%-   endif %}
+{%-   if fun.overloads %}
+
+    Overloads: ~
+{%-    for overload in fun.overloads %}
+      • {{ overload | str | wrap("`") }}
+{%-    endfor %}
+{%-   endif %}
+
+{%-   if fun.parameters %}
+
+    Parameters: ~
+{%-     for i, param in fun.parameters | enumerate %}
+{%-       if not param.typ %}
+      • {{ (param.name or (i | wrap("[", "]"))) | wrap("{", "}") }} `any`
+{%-       elif param.typ.is_optional %}
+      • {{ (param.name or (i | wrap("[", "]"))) | wrap("{", "}") }}? {{ param.typ.inner | str | wrap("|" if param.typ.inner.kind.value is in ["class", "enum", "alias"] else "`") }}
+{%-       else %}
+      • {{ (param.name or (i | wrap("[", "]"))) | wrap("{", "}") }} {{ param.typ | str | wrap("|" if param.typ.kind.value is in ["class", "enum", "alias"] else "`") }}
+{%-       endif %}
+{%-       if param.desc %}
+          {{ param.desc | trim | vimdoc(indent=10) | trim }}
+{%-       elif param.typ | should_expand and param.typ.fields %}
+          Table fields:
+{%-         for attr, val in ((param.typ.fields or {}) | dict).items() %}
+{%-           if val.is_optional %}
+{%-             set typ = ((val.typ or val).inner or val) %}
+          • {{ attr |  wrap("{", "}") }}? {{ typ | str |  wrap("|" if typ.kind.value is in ["class", "enum", "alias"] else "`") }}
+{%-           else %}
+{%-             set typ = val.typ or val %}
+          • {{ attr |  wrap("{", "}") }} {{ typ | str |  wrap("|" if typ.kind.value is in ["class", "enum", "alias"] else "`") }}
+{%-           endif %}
+{%-           if val.desc %}
+              {{ val.desc | trim | vimdoc(indent=14) | trim }}
+{%-           endif %}
+{%-         endfor %}
+{%-       endif %}
+{%-     endfor %}
+{%-   endif %}
+
+{%-   if fun.returns %}
+
+    Returns: ~
+{%-     if (fun.returns | length) == 1 %}
+{%-       set ret = fun.returns[0] %}
+{%-       if ret.name %}
+{%-         if ret.typ.is_optional %}
+        {{ ret.name | wrap("{", "}") }}? {{ ret.typ.inner | str | wrap("|" if ret.typ.inner.kind.value is in ["class", "enum", "alias"] else "`") }}
+{%-         else %}
+        {{ ret.name | wrap("{", "}") }} {{ ret.typ | str | wrap("|" if ret.typ.kind.value is in ["class", "enum", "alias"] else "`") }}
+{%-         endif %}
+{%-       elif ret.typ.is_optional %}
+        {{ ret.typ | str | wrap("|" if ret.typ.inner.kind.value is in ["class", "enum", "alias"] else "`") }}
+{%-       else %}
+        {{ ret.typ | str | wrap("|" if ret.typ.kind.value is in ["class", "enum", "alias"] else "`") }}
+{%-       endif %}
+{%-       if ret.desc %}
+          {{ ret.desc | trim | vimdoc(indent=10) | trim }}
+{%-       endif %}
+{%-     else %}
+{%-       for i, ret in fun.returns | enumerate %}
+{%-         if ret.typ.is_optional %}
+      • {{ (ret.name or (i | wrap("[", "]"))) | wrap("{", "}") }}? {{ ret.typ.inner | str | wrap("|" if ret.typ.inner.kind.value is in ["class", "enum", "alias"] else "`") }}
+{%-         else %}
+      • {{ (ret.name or (i | wrap("[", "]"))) | wrap("{", "}") }} {{ ret.typ | str | wrap("|" if ret.typ.kind.value is in ["class", "enum", "alias"] else "`") }}
+{%-         endif %}
+{%-         if ret.desc %}
+          {{ ret.desc | trim | vimdoc(indent=10) | trim }}
+{%-         endif %}
+{%-       endfor %}
+{%-     endif %}
+{%-   endif %}
+{%- endanchor -%}

@@ -1,0 +1,167 @@
+{%- set is_method = fun.is_meth or (((fun.parameters | first) or {}).name == "self") %}
+{%- set anch = fun.name ~ "()" %}
+{%- set sig = fun.name ~ (fun.params | map("first") | map("wrap", "`") | join(", ") | wrap("(", ")")) %}
+{%- if cls %}
+{%-   set clsname = cls.name_parts | last %}
+{%-   set anch = cls.name ~ (":" if is_method else ".") ~ anch %}
+{%-   if is_method %}
+{%-     set sig = cls.name_parts | last ~ ":" ~ sig %}
+{%-   endif %}
+{%- endif %}
+{%- section sig with anchor=anch literal=true %}
+
+{%-   if fun.deprecated %}
+**DEPRECATED:** {{ fun.deprecated_reason | trim | indent(12) }}
+{%-   endif %}
+{%-   if fun.desc %}
+
+{{ fun.desc | trim }}
+{%-   endif %}
+
+{%-   set tags = {} %}
+{%-   if fun.is_generic %}
+{%-     set generics = [] %}
+{%-     for generic, base in fun.generics %}
+{%-       if base %}
+{%-         do generics.append("`{}` (base: `{}`)".format(generic, base)) %}
+{%-       else %}
+{%-         do generics.append("`{}`".format(generic)) %}
+{%-       endif %}
+{%-     endfor %}
+{%-     do tags.update({"generic": generics | join(", ")})   %}
+{%-   endif %}
+{%-   if fun.is_nodiscard %}
+{%-     do tags.update({"nodiscard": fun.nodicard_message or ""})   %}
+{%-   endif %}
+{%-   if fun.is_async %}
+{%-     do tags.append({"async": ""})   %}
+{%-   endif %}
+{%-   do tags.update(fun.tags) %}
+{%-   if tags %}
+
+**Attributes:**
+{%-     for tag, val in tags | dictsort %}
+{%-       if val %}
+  * {{ tag }}: {{ val }}
+{%-       else %}
+  * {{ tag }}
+{%-       endif %}
+{%-     endfor %}
+{%-   endif %}
+{%-   if fun.overloads %}
+
+**Overloads:**
+{%-    for overload in fun.overloads %}
+  * {{ overload | str | wrap("`") }}
+{%-    endfor %}
+{%-   endif %}
+
+{%-   if fun.parameters %}
+
+**Parameters:**
+{%-     for i, param in fun.parameters | enumerate %}
+{%-       if not param.typ %}
+  * {{ (param.name or (i | wrap("[", "]"))) | wrap("**") }} `any`
+{%-       elif param.typ.is_optional %}
+{%-         if param.typ.kind.value is in ["class", "enum", "alias"] %}
+  * {{ (param.name or (i | wrap("[", "]"))) | wrap("**") }}? [{{ param.typ.inner | str }}](<#{{ param.typ.inner | str }}>)
+{%-         else %}
+  * {{ (param.name or (i | wrap("[", "]"))) | wrap("**") }}? {{ param.typ.inner | str | wrap("`") }}
+{%-         endif %}
+{%-       else %}
+{%-         if param.typ.kind.value is in ["class", "enum", "alias"] %}
+  * {{ (param.name or (i | wrap("[", "]"))) | wrap("**") }} [{{ param.typ | str }}](<#{{ param.typ | str }}>)
+{%-         else %}
+  * {{ (param.name or (i | wrap("[", "]"))) | wrap("**") }} {{ param.typ | str | wrap("`") }}
+{%-         endif %}
+{%-       endif %}
+{%-       if param.desc %}
+
+    {{ param.desc | trim | indent(4) }}
+{%       elif param.typ | should_expand and param.typ.fields %}
+
+    Table fields:
+{%         for attr, val in ((param.typ.fields or {}) | dict).items() %}
+{%-           if val.is_optional %}
+{%-             set typ = ((val.typ or val).inner or val) %}
+{%-             if typ.kind.value is in ["class", "enum", "alias"] %}
+    * {{ attr |  wrap("**") }}? [{{ typ | str }}](<#{{ typ | str }}>)
+{%-             else %}
+    * {{ attr |  wrap("**") }}? {{ typ | str |  wrap("`") }}
+{%-             endif %}
+{%-           else %}
+{%-             set typ = val.typ or val %}
+{%-             if typ.kind.value is in ["class", "enum", "alias"] %}
+    * {{ attr |  wrap("**") }} [{{ typ | str }}](<#{{ typ | str }}>)
+{%-             else %}
+    * {{ attr |  wrap("**") }} {{ typ | str |  wrap("`") }}
+{%-             endif %}
+{%-           endif %}
+{%-           if val.desc %}
+
+      {{ val.desc | trim | indent(6) }}
+{%           endif %}
+{%-         endfor %}
+{%-       endif %}
+{%-     endfor %}
+{%-   endif %}
+
+{%-   if fun.returns %}
+
+**Returns:**
+{%-     if (fun.returns | length) == 1 %}
+{%-       set ret = fun.returns[0] %}
+{%-       if ret.name %}
+{%-         if ret.typ.is_optional %}
+{%-           if ret.typ.kind.value is in ["class", "enum", "alias"] %}
+{{- " " ~ ret.name | wrap("**") }}? [{{ ret.typ.inner | str }}](<#{{ ret.typ.inner | str }}>)
+{%-           else %}
+{{- " " ~ ret.name | wrap("**") }}? {{ ret.typ.inner | str | wrap("`") }}
+{%-           endif %}
+{%-         else %}
+{%-           if ret.typ.kind.value is in ["class", "enum", "alias"] %}
+{{- " " ~ ret.name | wrap("**") }} [{{ ret.typ | str }}](<#{{ ret.typ | str }}>)
+{%-           else %}
+{{- " " ~ ret.name | wrap("**") }} {{ ret.typ | str | wrap("`") }}
+{%-           endif %}
+{%-         endif %}
+{%-       elif ret.typ.is_optional %}
+{%-         if ret.typ.kind.value is in ["class", "enum", "alias"] %}
+{{- " " ~ ret.typ | str | link }}
+{%-         else %}
+{{- " " ~ ret.typ | str | wrap("`") }}
+{%-         endif %}
+{%-       else %}
+{%-         if ret.typ.kind.value is in ["class", "enum", "alias"] %}
+{{- " " ~ ret.typ | str | link }}
+{%-         else %}
+{{- " " ~ ret.typ | str | wrap("`") }}
+{%-         endif %}
+{%-       endif %}
+{%-       if ret.desc %}
+
+{{ ret.desc | trim }}
+{%       endif %}
+{%-     else %}
+{%-       for i, ret in fun.returns | enumerate %}
+{%-         if ret.typ.is_optional %}
+{%-           if ret.typ.kind.value is in ["class", "enum", "alias"] %}
+  * {{ (ret.name or ((i + 1) | wrap("[", "]"))) | wrap("**") }}? [{{ ret.typ.inner | str }}](<#{{ ret.typ.inner | str }}>)
+{%-           else %}
+  * {{ (ret.name or ((i + 1) | wrap("[", "]"))) | wrap("**") }}? {{ ret.typ.inner | str | wrap("`") }}
+{%-           endif %}
+{%-         else %}
+{%-           if ret.typ.kind.value is in ["class", "enum", "alias"] %}
+  * {{ (ret.name or ((i + 1) | wrap("\\[", "\\]"))) | wrap("**") }} [{{ ret.typ | str }}](<#{{ ret.typ | str }}>)
+{%-           else %}
+  * {{ (ret.name or ((i + 1) | wrap("\\[", "\\]"))) | wrap("**") }} {{ ret.typ | str | wrap("`") }}
+{%-           endif %}
+{%-         endif %}
+{%-         if ret.desc %}
+
+    {{ ret.desc | trim | indent(4) }}
+{%         endif %}
+{%-       endfor %}
+{%-     endif %}
+{%-   endif %}
+{%- endsection -%}

@@ -1,0 +1,28 @@
+{%- section "`{}` (Class)".format(cls.name) with anchor=cls.name literal=true %}
+
+{%- if cls.desc %}
+
+{{ cls.desc | trim }}
+{%- endif %}
+
+{%- if cls.fields %}
+
+**Fields:**
+{%   for fname, field in cls.fields.items() %}
+{%-     if field.name.startswith("_") or field.is_optional %}
+{%-       continue %}
+{%-     endif %}
+{{-     field }}
+{%-   endfor %}
+{%-   for fname, field in cls.fields.items() %}
+{%-     if field.name.startswith("_") or not field.is_optional %}
+{%-       continue %}
+{%-     endif %}
+{{-     field }}
+{%-   endfor %}
+{%- endif %}
+{%- for fname, fun in cls.funs.items() %}
+{%-    include "function.jinja" %}
+{%- endfor %}
+
+{%- endsection -%}

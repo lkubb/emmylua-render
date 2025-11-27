@@ -1,0 +1,21 @@
+{%- if field.is_optional %}
+{%-   if field.typ.inner.kind.value is in ["class", "enum", "alias"] %}
+* {{ field.name | wrap("**") }}? [{{ field.typ.inner | str }}](<#{{ field.typ.inner | str }}>)
+{%-   else %}
+* {{ field.name | wrap("**") }}? {{ field.typ.inner | str | wrap("`") }}
+{%-   endif %}
+{%-   if field.desc %}
+
+  {{ field.desc | trim | indent(2) }}
+{%   endif %}
+{%- else %}
+{%-   if field.typ.kind.value is in ["class", "enum", "alias"] %}
+* {{ field.name | wrap("**") }} [{{ field.typ | str }}](<#{{ field.typ | str }}>)
+{%-   else %}
+* {{ field.name | wrap("**") }} {{ field.typ | str | wrap("`") }}
+{%-   endif %}
+{%-   if field.desc %}
+
+  {{ field.desc | trim | indent(2) }}
+{%   endif %}
+{%- endif -%}
