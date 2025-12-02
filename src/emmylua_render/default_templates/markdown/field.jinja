@@ -4,18 +4,41 @@
 {%-   else %}
 * {{ field.name | wrap("**") }}? {{ field.typ.inner | str | wrap("`") }}
 {%-   endif %}
-{%-   if field.desc %}
-
+{%-   if field.desc %}\
   {{ field.desc | trim | indent(2) }}
-{%   endif %}
+{%-   endif %}
 {%- else %}
 {%-   if field.typ.kind.value is in ["class", "enum", "alias"] %}
 * {{ field.name | wrap("**") }} [{{ field.typ | str }}](<#{{ field.typ | str }}>)
 {%-   else %}
 * {{ field.name | wrap("**") }} {{ field.typ | str | wrap("`") }}
 {%-   endif %}
-{%-   if field.desc %}
-
+{%-   if field.desc %}\
   {{ field.desc | trim | indent(2) }}
-{%   endif %}
-{%- endif -%}
+{%-   endif %}
+{%- endif %}
+
+{%- if field.typ | should_expand and field.typ.fields %}
+
+  Table fields:
+{%    for attr, val in ((field.typ.fields or {}) | dict).items() %}
+{%-     if val.is_optional %}
+{%-       set typ = ((val.typ or val).inner or val) %}
+{%-       if typ.kind.value is in ["class", "enum", "alias"] %}
+  * {{ attr |  wrap("**") }}? [{{ typ | str }}](<#{{ typ | str }}>)
+{%-       else %}
+  * {{ attr |  wrap("**") }}? {{ typ | str |  wrap("`") }}
+{%-       endif %}
+{%-     else %}
+{%-       set typ = val.typ or val %}
+{%-       if typ.kind.value is in ["class", "enum", "alias"] %}
+  * {{ attr |  wrap("**") }} [{{ typ | str }}](<#{{ typ | str }}>)
+{%-       else %}
+  * {{ attr |  wrap("**") }} {{ typ | str |  wrap("`") }}
+{%-       endif %}
+{%-     endif %}
+{%-     if val.desc %}\
+    {{ val.desc | trim | indent(4) }}
+{%-     endif %}
+{%-   endfor %}
+{%-  endif -%}

@@ -69,7 +69,8 @@
 {%-       endif %}
 {%-       if param.desc %}
           {{ param.desc | trim | vimdoc(indent=10) | trim }}
-{%-       elif param.typ | should_expand and param.typ.fields %}
+{%-       endif %}
+{%-       if param.typ | should_expand and param.typ.fields %}{{ "\n" if param.desc else "" }}
           Table fields:
 {%-         for attr, val in ((param.typ.fields or {}) | dict).items() %}
 {%-           if val.is_optional %}

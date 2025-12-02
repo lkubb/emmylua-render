@@ -75,13 +75,12 @@
   * {{ (param.name or (i | wrap("[", "]"))) | wrap("**") }} {{ param.typ | str | wrap("`") }}
 {%-         endif %}
 {%-       endif %}
-{%-       if param.desc %}
-
+{%-       if param.desc %}\
     {{ param.desc | trim | indent(4) }}
-{%       elif param.typ | should_expand and param.typ.fields %}
-
+{%-       endif %}
+{%        if param.typ | should_expand and param.typ.fields %}
     Table fields:
-{%         for attr, val in ((param.typ.fields or {}) | dict).items() %}
+{%          for attr, val in ((param.typ.fields or {}) | dict).items() %}
 {%-           if val.is_optional %}
 {%-             set typ = ((val.typ or val).inner or val) %}
 {%-             if typ.kind.value is in ["class", "enum", "alias"] %}
@@ -97,10 +96,9 @@
     * {{ attr |  wrap("**") }} {{ typ | str |  wrap("`") }}
 {%-             endif %}
 {%-           endif %}
-{%-           if val.desc %}
-
+{%-           if val.desc %}\
       {{ val.desc | trim | indent(6) }}
-{%           endif %}
+{%-            endif %}
 {%-         endfor %}
 {%-       endif %}
 {%-     endfor %}
@@ -138,8 +136,7 @@
 {{- " " ~ ret.typ | str | wrap("`") }}
 {%-         endif %}
 {%-       endif %}
-{%-       if ret.desc %}
-
+{%-       if ret.desc %}\
 {{ ret.desc | trim }}
 {%       endif %}
 {%-     else %}
@@ -157,8 +154,7 @@
   * {{ (ret.name or ((i + 1) | wrap("\\[", "\\]"))) | wrap("**") }} {{ ret.typ | str | wrap("`") }}
 {%-           endif %}
 {%-         endif %}
-{%-         if ret.desc %}
-
+{%-         if ret.desc %}\
     {{ ret.desc | trim | indent(4) }}
 {%         endif %}
 {%-       endfor %}

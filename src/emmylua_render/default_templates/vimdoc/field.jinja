@@ -8,4 +8,19 @@
 {%-   if field.desc %}
           {{ field.desc | trim | vimdoc(indent=10) | trim }}
 {%-   endif %}
+{%- endif %}
+{%- if field.typ | should_expand and field.typ.fields %}{{ "\n" if field.desc else "" }}
+          Table fields:
+{%-   for attr, val in ((field.typ.fields or {}) | dict).items() %}
+{%-     if val.is_optional %}
+{%-       set typ = ((val.typ or val).inner or val) %}
+          • {{ attr |  wrap("{", "}") }} {{ typ | str |  wrap("|" if typ.kind.value is in ["class", "enum", "alias"] else "`") }}
+{%-     else %}
+{%-       set typ = val.typ or val %}
+          • {{ attr |  wrap("{", "}") }} {{ typ | str |  wrap("|" if typ.kind.value is in ["class", "enum", "alias"] else "`") }}
+{%-     endif %}
+{%-     if val.desc %}
+              {{ val.desc | trim | vimdoc(indent=14) | trim }}
+{%-     endif %}
+{%-   endfor %}
 {%- endif -%}
