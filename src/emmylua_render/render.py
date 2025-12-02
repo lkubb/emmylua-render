@@ -253,7 +253,7 @@ class DocExtension(Extension):
     def _render_anchor(self, name: str, *, literal: bool, caller):
         prefix = self.environment.anchor_prefix
         content = caller()
-        if content[0] == "\n":
+        if content and content[0] == "\n":
             content = content[1:]
         return "\n" + self.environment.filters["anchor"](
             content, name, prefix=prefix, literal=literal
@@ -297,7 +297,7 @@ class DocExtension(Extension):
         content = caller()
         if markdown and self.environment.emmylua_render["fmt"] != "markdown":
             content = self.environment.filters["vimdoc"](content)
-        if content[0] == "\n":
+        if content and content[0] == "\n":
             content = content[1:]
 
         stack.pop()
