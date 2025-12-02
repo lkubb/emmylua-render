@@ -363,17 +363,21 @@ class DocumentedField(DocumentedType):
         Dynamically subclass ``typ``. For a weak justification
         of this worrying pattern, see ``OptionalType``.
         """
+        DocumentedType.__init__(self, typedef=typedef)
+        object.__setattr__(self, "typ", typ)
+        object.__setattr__(
+            self, "__orig_attrs", tuple(x for x in dir(self) if not x.startswith("__"))
+        )
+
         self.__class__ = type(
             typ.__class__.__name__ + "Field",
             (self.__class__, typ.__class__),
             {},
         )
-        DocumentedType.__init__(self, typedef=typedef)
-        object.__setattr__(self, "typ", typ)
 
-    def __getattr__(self, k):
-        if k.startswith("__"):
-            raise AttributeError(k)
+    def __getattribute__(self, k):
+        if k.startswith("__") or k in object.__getattribute__(self, "__orig_attrs"):
+            return object.__getattribute__(self, k)
         return getattr(self.typ, k)
 
     def substitute_typevars(self, typevars: dict[str, ResolvedType]) -> Self:
@@ -996,8 +1000,10 @@ class IntersectionType(ResolvedType):
     def members(self) -> dict[str, DocumentedFunction | DocumentedField]:
         res = {}
         for el in self.elements:
-            if isinstance(el, StructType):
+            try:
                 res |= el.members
+            except AttributeError:
+                pass
         return res
 
     @property
@@ -1256,17 +1262,20 @@ class OptionalType[T: ResolvedType](ResolvedType):
         but oh well, it's fun and makes docs rendering easier.
         This is not a long-running process.
         """
+        object.__setattr__(self, "inner", inner)
+        object.__setattr__(
+            self, "__orig_attrs", tuple(x for x in dir(self) if not x.startswith("__"))
+        )
         # An optional type is always optional, we don't need to be able
         # to wrap ourselves, hence we don't need to account for MRO.
         # Assumption: The type parser does its job.
         self.__class__ = type(
             "Optional" + inner.__class__.__name__, (self.__class__, inner.__class__), {}
         )
-        object.__setattr__(self, "inner", inner)
 
-    def __getattr__(self, k):
-        if k.startswith("__"):
-            raise AttributeError(k)
+    def __getattribute__(self, k):
+        if k.startswith("__") or k in object.__getattribute__(self, "__orig_attrs"):
+            return object.__getattribute__(self, k)
         return getattr(self.inner, k)
 
     def __str__(self) -> str:
@@ -1295,6 +1304,10 @@ class ArrayType[T: ResolvedType](ResolvedType):
         Dynamically subclass ``element_type``. For a weak justification
         of this worrying pattern, see ``OptionalType``.
         """
+        object.__setattr__(self, "element_type", element_type)
+        object.__setattr__(
+            self, "__orig_attrs", tuple(x for x in dir(self) if not x.startswith("__"))
+        )
         if isinstance(element_type, ArrayType):
             # Avoid MRO resolution issues
             inherit = (element_type.__class__,)
@@ -1313,11 +1326,10 @@ class ArrayType[T: ResolvedType](ResolvedType):
         # Using getattr works just as well.
         # Still not sure if this is necessary in general,
         # at least for ArrayType. For OptionalType, it makes more sense.
-        object.__setattr__(self, "element_type", element_type)
 
-    def __getattr__(self, k):
-        if k.startswith("__"):
-            raise AttributeError(k)
+    def __getattribute__(self, k):
+        if k.startswith("__") or k in object.__getattribute__(self, "__orig_attrs"):
+            return object.__getattribute__(self, k)
         return getattr(self.element_type, k)
 
     def substitute_typevars(self, typevars) -> Self:
@@ -1349,16 +1361,19 @@ class VariadicType[T](ResolvedType):
         Dynamically subclass ``element_type``. For a weak justification
         of this worrying pattern, see ``OptionalType``.
         """
+        object.__setattr__(self, "element_type", element_type)
+        object.__setattr__(
+            self, "__orig_attrs", tuple(x for x in dir(self) if not x.startswith("__"))
+        )
         self.__class__ = type(
             "Variadic" + element_type.__class__.__name__,
             (self.__class__, element_type.__class__),
             {},
         )
-        object.__setattr__(self, "element_type", element_type)
 
-    def __getattr__(self, k):
-        if k.startswith("__"):
-            raise AttributeError(k)
+    def __getattribute__(self, k):
+        if k.startswith("__") or k in object.__getattribute__(self, "__orig_attrs"):
+            return object.__getattribute__(self, k)
         return getattr(self.element_type, k)
 
     def substitute_typevars(self, typevars) -> Self:
