@@ -223,6 +223,8 @@ def validate_args(args: argparse.Namespace) -> tuple[bool, str]:
 
     if not args.project_root.exists():
         return False, f"Project root does not exist: {args.project_root}"
+    else:
+        args.project_root = args.project_root.resolve()
 
     if not args.project_root.is_dir():
         return False, f"Project root is not a directory: {args.project_root}"
