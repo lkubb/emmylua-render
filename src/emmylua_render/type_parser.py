@@ -419,8 +419,8 @@ class FunctionType(ResolvedType):
         params = tuple(
             (param[0], param[1].substitute_typevars(typevars)) for param in self.params
         )
-        returns = self.rets and self.rets.substitute_typevars(typevars) or None
-        return replace(self, params=params, returns=returns)
+        rets = self.rets and self.rets.substitute_typevars(typevars) or None
+        return replace(self, params=params, rets=rets)
 
     def is_void(self) -> bool:
         return self.rets is None
