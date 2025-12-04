@@ -915,6 +915,21 @@ class AliasType(StructType, DocumentedType):
             object.__setattr__(self, "_members", getattr(self.typ, "members", {}))
         return self._members
 
+    def member_refs(self, visited: set[str] | None = None) -> set[ResolvedType]:
+        """
+        Get all referenced struct types in members (recursively).
+        Intended to ensure all referenced structs are also documented.
+        """
+        visited = visited or set()
+        ret = StructType.member_refs(self, visited)
+        # We're also rendering our aliased type
+        typ_refs = self.typ.refs()
+        ret = ret.union(typ_refs)
+        for typ in typ_refs:
+            if isinstance(typ, StructType):
+                ret = ret.union(typ.member_refs(visited))
+        return ret
+
     def substitute_typevars(
         self, typevars: dict[str, ResolvedType]
     ) -> Self | "GenericClassInstanceType":
@@ -954,6 +969,21 @@ class EnumType(StructType, DocumentedType):
             "typ",
             UnionType([x.typ for x in self.fields.values()], parser=self.parser),
         )
+
+    def member_refs(self, visited: set[str] | None = None) -> set[ResolvedType]:
+        """
+        Get all referenced struct types in members (recursively).
+        Intended to ensure all referenced structs are also documented.
+        """
+        visited = visited or set()
+        ret = StructType.member_refs(self, visited)
+        # We're also rendering our aliased type
+        typ_refs = self.typ.refs()
+        ret = ret.union(typ_refs)
+        for typ in typ_refs:
+            if isinstance(typ, StructType):
+                ret = ret.union(typ.member_refs(visited))
+        return ret
 
 
 @dataclass(frozen=True)
