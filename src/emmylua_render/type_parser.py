@@ -660,7 +660,9 @@ class StructType(ResolvedType):
 
     kind: TypeKind = field(init=False, repr=False, default=TypeKind.STRUCT)
     name: str
-    typedef: Class | Alias | Enum | None = field(kw_only=True, default=None)
+    typedef: Class | Alias | Enum | None = field(
+        kw_only=True, default=None, compare=False, repr=False
+    )
 
     _generics: tuple[tuple[str, str | None]] = field(
         init=False, repr=False, compare=False, default=None
@@ -844,7 +846,10 @@ class ClassType(StructType, DocumentedType):
         if not found_any:
             return self
         return GenericClassInstanceType(
-            self.name, type_args=type_args, typedef=self.typedef, parser=self.parser
+            self.name,
+            type_args=tuple(type_args),
+            typedef=self.typedef,
+            parser=self.parser,
         )
 
     def __repr__(self) -> str:
@@ -887,7 +892,10 @@ class AliasType(StructType, DocumentedType):
         if not found_any:
             return self
         return GenericAliasInstanceType(
-            self.name, type_args=type_args, typedef=self.typedef, parser=self.parser
+            self.name,
+            type_args=tuple(type_args),
+            typedef=self.typedef,
+            parser=self.parser,
         )
 
     def __repr__(self) -> str:
@@ -1605,7 +1613,7 @@ class TreeHydrator(Transformer):
         if base.__class__ is StructType:
             # Can't decide, we don't have a class definition
             return GenericStructInstanceType(
-                base.name, type_args, typedef=base.typedef, parser=self.parser
+                base.name, tuple(type_args), typedef=base.typedef, parser=self.parser
             )
 
         base_generics = base.generics
@@ -1623,19 +1631,19 @@ class TreeHydrator(Transformer):
         # We got at least one typevar
         if isinstance(base, ClassType):
             return GenericClassInstanceType(
-                base.name, type_args, typedef=base.typedef, parser=self.parser
+                base.name, tuple(type_args), typedef=base.typedef, parser=self.parser
             )
         if isinstance(base, AliasType):
             return GenericAliasInstanceType(
-                base.name, type_args, typedef=base.typedef, parser=self.parser
+                base.name, tuple(type_args), typedef=base.typedef, parser=self.parser
             )
         if isinstance(base, EnumType):
             return GenericEnumInstanceType(
-                base.name, type_args, typedef=base.typedef, parser=self.parser
+                base.name, tuple(type_args), typedef=base.typedef, parser=self.parser
             )
         # fallback, shouldn't happen
         return GenericStructInstanceType(
-            base.name, type_args, typedef=base.typedef, parser=self.parser
+            base.name, tuple(type_args), typedef=base.typedef, parser=self.parser
         )
 
     @v_args(inline=True)
