@@ -204,7 +204,12 @@ class DocExtension(Extension):
             toc["referenced_types"] = toc["referenced_types"].union(
                 typ.member_refs(visited)
             )
-        return self.environment.get_template("typeref.jinja").render()
+        refs = {
+            typ
+            for typ in toc["referenced_types"].difference(toc["rendered_types"])
+            if isinstance(typ, DocumentedType)
+        }
+        return self.environment.get_template("typeref.jinja").render(refs=refs)
 
     def _render_fun(self, fun: DocumentedFunction):
         return self.environment.get_template("function.jinja").render(fun=fun)

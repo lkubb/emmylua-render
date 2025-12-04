@@ -34,17 +34,27 @@ def get_vimruntime() -> str:
 def get_doc_data(project_root: Path, env_override: dict[str, str]) -> str:
     base_env = os.environ.copy()
     env = base_env | {"VIMRUNTIME": get_vimruntime()} | env_override
+    rel_pp = project_root.relative_to(Path(".").resolve())
+    # Limit doc output for performance and to avoid rendering unrelated types
+    includes = ",".join(
+        str(pdir.relative_to(rel_pp) / "**" / "*.lua")
+        for pdir in rel_pp.glob("*")
+        if pdir.is_dir()
+    )
+    cmd = [
+        "emmylua_doc_cli",
+        "-c",
+        ".emmyrc.json",
+        "-f",
+        "json",
+        "-o",
+        "stdout",
+        "--include",
+        includes,
+        str(rel_pp) + "/",
+    ]
     out = subprocess.run(
-        [
-            "emmylua_doc_cli",
-            "-c",
-            ".emmyrc.json",
-            "-f",
-            "json",
-            "-o",
-            "stdout",
-            str(project_root.relative_to(Path(".").resolve())) + "/",
-        ],
+        cmd,
         env=env,
         check=True,
         capture_output=True,
