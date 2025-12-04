@@ -225,6 +225,9 @@ class JinjaRenderer:
     def _render_toc(self):
         return self.env.get_template("toc.jinja").render()
 
+    def _render_typeref(self):
+        return self.env.get_template("typeref.jinja").render()
+
     def add_filter(self, name: str, func: Callable):
         """
         Add a custom filter to the Jinja environment.

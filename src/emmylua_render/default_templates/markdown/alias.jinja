@@ -1,6 +1,6 @@
 {%- section "`{}` (Alias)".format(alias.name) with anchor=alias.name literal=true %}
 
-**Type:** `{{ alias.typ | str }}`
+**Type:** {{ alias.typ | humanize }}
 
 {%- if alias.desc %}
 

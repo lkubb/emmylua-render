@@ -52,7 +52,7 @@
 
 **Overloads:**
 {%-    for overload in fun.overloads %}
-  * {{ overload | str | wrap("`") }}
+  * {{ overload | humanize }}
 {%-    endfor %}
 {%-   endif %}
 
@@ -63,17 +63,9 @@
 {%-       if not param.typ %}
   * {{ (param.name or (i | wrap("[", "]"))) | wrap("**") }} `any`
 {%-       elif param.typ.is_optional %}
-{%-         if param.typ.kind.value is in ["class", "enum", "alias"] %}
-  * {{ (param.name or (i | wrap("[", "]"))) | wrap("**") }}? [{{ param.typ.inner | str }}](<#{{ param.typ.inner | str }}>)
-{%-         else %}
-  * {{ (param.name or (i | wrap("[", "]"))) | wrap("**") }}? {{ param.typ.inner | str | wrap("`") }}
-{%-         endif %}
+  * {{ (param.name or (i | wrap("[", "]"))) | wrap("**") }}? {{ param.typ.inner | humanize }}
 {%-       else %}
-{%-         if param.typ.kind.value is in ["class", "enum", "alias"] %}
-  * {{ (param.name or (i | wrap("[", "]"))) | wrap("**") }} [{{ param.typ | str }}](<#{{ param.typ | str }}>)
-{%-         else %}
-  * {{ (param.name or (i | wrap("[", "]"))) | wrap("**") }} {{ param.typ | str | wrap("`") }}
-{%-         endif %}
+  * {{ (param.name or (i | wrap("[", "]"))) | wrap("**") }} {{ param.typ | humanize }}
 {%-       endif %}
 {%-       if param.desc %}\
     {{ param.desc | trim | indent(4) }}
@@ -83,18 +75,10 @@
 {%          for attr, val in ((param.typ.fields or {}) | dict).items() %}
 {%-           if val.is_optional %}
 {%-             set typ = ((val.typ or val).inner or val) %}
-{%-             if typ.kind.value is in ["class", "enum", "alias"] %}
-    * {{ attr |  wrap("**") }}? [{{ typ | str }}](<#{{ typ | str }}>)
-{%-             else %}
-    * {{ attr |  wrap("**") }}? {{ typ | str |  wrap("`") }}
-{%-             endif %}
+    * {{ attr |  wrap("**") }}? {{ typ | humanize }}
 {%-           else %}
 {%-             set typ = val.typ or val %}
-{%-             if typ.kind.value is in ["class", "enum", "alias"] %}
-    * {{ attr |  wrap("**") }} [{{ typ | str }}](<#{{ typ | str }}>)
-{%-             else %}
-    * {{ attr |  wrap("**") }} {{ typ | str |  wrap("`") }}
-{%-             endif %}
+    * {{ attr |  wrap("**") }} {{ typ | humanize }}
 {%-           endif %}
 {%-           if val.desc %}\
       {{ val.desc | trim | indent(6) }}
@@ -111,48 +95,22 @@
 {%-       set ret = fun.returns[0] %}
 {%-       if ret.name %}
 {%-         if ret.typ.is_optional %}
-{%-           if ret.typ.kind.value is in ["class", "enum", "alias"] %}
-{{- " " ~ ret.name | wrap("**") }}? [{{ ret.typ.inner | str }}](<#{{ ret.typ.inner | str }}>)
-{%-           else %}
-{{- " " ~ ret.name | wrap("**") }}? {{ ret.typ.inner | str | wrap("`") }}
-{%-           endif %}
+{{- " " ~ ret.name | wrap("**") }}? {{ ret.typ.inner | humanize }}
 {%-         else %}
-{%-           if ret.typ.kind.value is in ["class", "enum", "alias"] %}
-{{- " " ~ ret.name | wrap("**") }} [{{ ret.typ | str }}](<#{{ ret.typ | str }}>)
-{%-           else %}
-{{- " " ~ ret.name | wrap("**") }} {{ ret.typ | str | wrap("`") }}
-{%-           endif %}
-{%-         endif %}
-{%-       elif ret.typ.is_optional %}
-{%-         if ret.typ.kind.value is in ["class", "enum", "alias"] %}
-{{- " " ~ ret.typ | str | link }}
-{%-         else %}
-{{- " " ~ ret.typ | str | wrap("`") }}
+{{- " " ~ ret.name | wrap("**") }} {{ ret.typ | humanize }}
 {%-         endif %}
 {%-       else %}
-{%-         if ret.typ.kind.value is in ["class", "enum", "alias"] %}
-{{- " " ~ ret.typ | str | link }}
-{%-         else %}
-{{- " " ~ ret.typ | str | wrap("`") }}
-{%-         endif %}
+{{- " " ~ ret.typ | humanize }}
 {%-       endif %}
 {%-       if ret.desc %}\
 {{ ret.desc | trim }}
-{%       endif %}
+{%        endif %}
 {%-     else %}
 {%-       for i, ret in fun.returns | enumerate %}
 {%-         if ret.typ.is_optional %}
-{%-           if ret.typ.kind.value is in ["class", "enum", "alias"] %}
-  * {{ (ret.name or ((i + 1) | wrap("[", "]"))) | wrap("**") }}? [{{ ret.typ.inner | str }}](<#{{ ret.typ.inner | str }}>)
-{%-           else %}
-  * {{ (ret.name or ((i + 1) | wrap("[", "]"))) | wrap("**") }}? {{ ret.typ.inner | str | wrap("`") }}
-{%-           endif %}
+  * {{ (ret.name or ((i + 1) | wrap("[", "]"))) | wrap("**") }}? {{ ret.typ.inner | humanize }}
 {%-         else %}
-{%-           if ret.typ.kind.value is in ["class", "enum", "alias"] %}
-  * {{ (ret.name or ((i + 1) | wrap("\\[", "\\]"))) | wrap("**") }} [{{ ret.typ | str }}](<#{{ ret.typ | str }}>)
-{%-           else %}
-  * {{ (ret.name or ((i + 1) | wrap("\\[", "\\]"))) | wrap("**") }} {{ ret.typ | str | wrap("`") }}
-{%-           endif %}
+  * {{ (ret.name or ((i + 1) | wrap("\\[", "\\]"))) | wrap("**") }} {{ ret.typ | humanize }}
 {%-         endif %}
 {%-         if ret.desc %}\
     {{ ret.desc | trim | indent(4) }}

@@ -1,10 +1,10 @@
 {%- if field.is_optional %}
-      • {{ field.name | wrap("{", "}") }}? {{ field.typ.inner | str | wrap("|" if field.typ.inner.kind.value is in ["class", "enum", "alias"] else "`") }}
+      • {{ field.name | wrap("{", "}") }}? {{ field.typ.inner | humanize }}
 {%-   if field.desc %}
           {{ field.desc | trim | vimdoc(indent=10) | trim }}
 {%-   endif %}
 {%- else %}
-      • {{ field.name | wrap("{", "}") }} {{ field.typ | str | wrap("|" if field.typ.kind.value is in ["class", "enum", "alias"] else "`") }}
+      • {{ field.name | wrap("{", "}") }} {{ field.typ | humanize }}
 {%-   if field.desc %}
           {{ field.desc | trim | vimdoc(indent=10) | trim }}
 {%-   endif %}
@@ -13,11 +13,9 @@
           Table fields:
 {%-   for attr, val in ((field.typ.fields or {}) | dict).items() %}
 {%-     if val.is_optional %}
-{%-       set typ = ((val.typ or val).inner or val) %}
-          • {{ attr |  wrap("{", "}") }} {{ typ | str |  wrap("|" if typ.kind.value is in ["class", "enum", "alias"] else "`") }}
+          • {{ attr |  wrap("{", "}") }}? {{ ((val.typ or val).inner or val) |  humanize }}
 {%-     else %}
-{%-       set typ = val.typ or val %}
-          • {{ attr |  wrap("{", "}") }} {{ typ | str |  wrap("|" if typ.kind.value is in ["class", "enum", "alias"] else "`") }}
+          • {{ attr |  wrap("{", "}") }} {{ (val.typ or val) | humanize }}
 {%-     endif %}
 {%-     if val.desc %}
               {{ val.desc | trim | vimdoc(indent=14) | trim }}

@@ -26,8 +26,11 @@ from emmylua_render.type_parser import (
     DocumentedFunction,
     DocumentedType,
     EnumType,
+    ResolvedType,
     TypeKind,
 )
+
+TYPEREF = {}
 
 
 def resolve_anchor(
@@ -87,7 +90,12 @@ class DocExtension(Extension):
 
     def __init__(self, environment):
         super().__init__(environment)
-        toc = {"index": {}, "glossary": {}}
+        toc = {
+            "index": {},
+            "glossary": {},
+            "referenced_types": set(),
+            "rendered_types": set(),
+        }
         toc["cur"] = toc["index"]
         self.environment.extend(
             section_stack=[],
@@ -95,7 +103,9 @@ class DocExtension(Extension):
             toc=toc,
         )
         self.environment.globals["__toc__"] = toc
+        self.environment.globals["typeref"] = TYPEREF
         self.environment.filters["should_expand"] = self.should_expand
+        self.environment.filters["humanize"] = self.humanize
         if self.environment.finalize is None:
             self.environment.finalize = self._finalizer
         else:
@@ -124,10 +134,42 @@ class DocExtension(Extension):
                 return False
         return True
 
+    def humanize(self, typ: ResolvedType) -> str:
+        """
+        Render type to a string. Inserts links to embedded struct docs
+        and keeps track of linked types, which can later be rendered
+        into a reference section.
+        """
+        toc = self.environment.toc
+        link = self.environment.filters["link"]
+        refs = typ.refs()
+        toc["referenced_types"] = toc["referenced_types"].union(refs)
+        # We could shortcut this logic for simple Class/Alias/Enum types
+        # by doing the following, but that could be premature optimization:
+        # if isinstance(typ, DocumentedType) and not isinstance(
+        #     typ, GenericStructInstanceType
+        # ):
+        #     # Shortcut for simple Class/Alias/Enum types
+        #     # but: my.custom.class<my.custom.alias> needs the hacky link rendering
+        #     return link(res, literal=True)
+        res = wrap(str(typ), "`")
+        for ref in refs:
+            # Don't render links to undocumented structs
+            if isinstance(ref, DocumentedType):
+                s = str(ref)
+                # Hacky solution: Replace struct names.
+                # To do that, we need to ensure literal strings are terminated before
+                # and resumed after the link. If it's the fist/last word, we would render
+                # a double backtick, which we need to remove (otherwise it might be rendered verbatim)
+                res = res.replace(s, wrap(link(s, literal=True), "`")).replace("``", "")
+        return res
+
     def _finalizer(self, data):
         """
         Allow dumping type objects to trigger inbuilt templates
         """
+        if data is TYPEREF:
+            return self._render_typeref()
         if isinstance(data, list):
             return self._render_list(data)
         if not isinstance(data, DocumentedType):
@@ -136,13 +178,28 @@ class DocExtension(Extension):
             return self._render_fun(data)
         if isinstance(data, DocumentedField):
             return self._render_field(data)
+        toc = self.environment.toc
         if isinstance(data, ClassType):
+            toc["rendered_types"].add(data)
             return self._render_class(data)
         if isinstance(data, AliasType):
+            toc["rendered_types"].add(data)
             return self._render_alias(data)
         if isinstance(data, EnumType):
+            toc["rendered_types"].add(data)
             return self._render_enum(data)
-        raise ValueError("Unknown class, cannot render: {type(data)}")
+        raise ValueError(f"Unknown class, cannot render: {type(data)}")
+
+    def _render_typeref(self):
+        # Ensure indirectly referenced types (those that are only referenced by types
+        # in the typeref) are included there as well
+        visited = set()
+        toc = self.environment.toc
+        for typ in list(toc["referenced_types"]):
+            toc["referenced_types"] = toc["referenced_types"].union(
+                typ.member_refs(visited)
+            )
+        return self.environment.get_template("typeref.jinja").render()
 
     def _render_fun(self, fun: DocumentedFunction):
         return self.environment.get_template("function.jinja").render(fun=fun)
@@ -391,8 +448,13 @@ class MarkdownRenderer(Renderer):
     def hr(self, char: str = "*") -> str:
         return char * 80
 
-    def link(self, text: str, target: str | None = None) -> str:
-        return f"[{text}](<#{target or text}>)"
+    def link(
+        self, text: str, target: str | None = None, *, literal: bool = False
+    ) -> str:
+        target = target or text
+        if literal:
+            text = wrap(text, "`")
+        return f"[{text}](<#{target}>)"
 
 
 class VimHelpRenderer(Renderer):
@@ -475,6 +537,6 @@ class VimHelpRenderer(Renderer):
     def hr(self, char: str = "=") -> str:
         return char * self.width
 
-    def link(self, text: str, target: None = None) -> str:
+    def link(self, text: str, target: None = None, *, literal: bool = False) -> str:
         assert target is None or text == target
         return f"|{text}|"

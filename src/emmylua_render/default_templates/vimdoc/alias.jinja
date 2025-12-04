@@ -1,12 +1,12 @@
 {%- section "`{}` (Alias)".format(alias.name) with anchor=alias.name literal=true %}
     Type: ~
-      `{{ alias.typ | str }}`
+      {{ alias.typ | humanize }}
 {%- if alias.desc %}
 
     {{ alias.desc | trim | vimdoc(indent=4) | trim }}
-{% endif %}
+{%- endif %}
 
-{%- if alias.fields %}
+{%- if alias.fields %}{{ "\n" if alias.desc else "" }}
     Fields: ~
 {%-   for fname, field in alias.fields.items() %}
 {%-     if field.name.startswith("_") or field.is_optional %}
@@ -25,4 +25,4 @@
 {%    include "function.jinja" %}
 {%- endfor %}
 
-{%- endsection %}
+{%- endsection -%}

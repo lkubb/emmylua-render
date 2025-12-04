@@ -239,6 +239,12 @@ class ResolvedType:
         object.__setattr__(new_self, "__dict__", new_attrs)
         return new_self
 
+    def refs(self) -> set[Self]:
+        """
+        Get all referenced struct types.
+        """
+        return set()
+
 
 @dataclass(frozen=True)
 class PrimitiveType(ResolvedType):
@@ -426,16 +432,13 @@ class FunctionType(ResolvedType):
         return self.rets is None
 
     def __str__(self) -> str:
-        try:
-            rendered_params = [
-                (f"{param[0]}: {param[1]}" if param[0] is not None else str(param[1]))
-                if not isinstance(param[1], VariadicType)
-                or not isinstance(param[1].element_type, AnyType)
-                else "..."  # render fun(foo: integer, ...) the same way (doesn't work in tuples, where it requires [integer, any ...])
-                for param in self.params
-            ]
-        except RuntimeError as err:
-            raise RuntimeError(dict(self.params)["..."].__class__) from err
+        rendered_params = [
+            (f"{param[0]}: {param[1]}" if param[0] is not None else str(param[1]))
+            if not isinstance(param[1], VariadicType)
+            or not isinstance(param[1].element_type, AnyType)
+            else "..."  # render fun(foo: integer, ...) the same way (doesn't work in tuples, where it requires [integer, any ...])
+            for param in self.params
+        ]
         rend = f"fun({', '.join(rendered_params)})"
         if self.rets:
             rend += f" -> {self.rets}"
@@ -453,6 +456,17 @@ class FunctionType(ResolvedType):
             #        but we currently can't tell them apart here without the typedef
             ret = f" => {repr(self.rets)}"
         return f"{name}({params}){ret}"
+
+    def refs(self) -> set[ResolvedType]:
+        """
+        Get all referenced struct types.
+        """
+        ret = set()
+        for param in self.params:
+            ret = ret.union(param[1].refs())
+        if self.rets is not None:
+            ret = ret.union(self.rets.refs())
+        return ret
 
 
 @dataclass(frozen=True)
@@ -766,6 +780,27 @@ class StructType(ResolvedType):
             )
         return self._fields
 
+    def refs(self) -> set[ResolvedType]:
+        """
+        Get all referenced struct types.
+        """
+        return {self}  # We only reference ourselves
+
+    def member_refs(self, visited: set[str] | None = None) -> set[ResolvedType]:
+        """
+        Get all referenced struct types in members (recursively).
+        Intended to ensure all referenced structs are also documented.
+        """
+        ret = set()
+        visited = visited or set()
+        for mem in self.members.values():
+            ret = ret.union(mem.refs())
+            if isinstance(mem, StructType):
+                if mem.name not in visited:
+                    visited.add(mem.name)
+                    ret = ret.union(mem.member_refs(visited))
+        return ret
+
     def _filter_typevars(
         self, typevars: dict[str, ResolvedType]
     ) -> tuple[list[ResolvedType], bool]:
@@ -782,10 +817,7 @@ class StructType(ResolvedType):
         return type_args, found_any
 
     def __str__(self) -> str:
-        try:
-            return self.name
-        except AttributeError:
-            raise RuntimeError(self.__class__)
+        return self.name
 
     def __repr__(self) -> str:
         return type(self).__name__.replace("Type", "") + f'["{self.name}"]'
@@ -975,6 +1007,17 @@ class TableType(ResolvedType):
             rendered.append("...")
         return f"{{ {', '.join(rendered)} }}"
 
+    def refs(self) -> set[ResolvedType]:
+        """
+        Get all referenced struct types.
+        """
+        ret = set()
+        for key, value in self.fields.items():
+            if isinstance(key, ResolvedType):
+                ret = ret.union(key.refs())
+            ret = ret.union(value.refs())
+        return ret
+
 
 @dataclass(frozen=True)
 class UnionType(ResolvedType):
@@ -996,6 +1039,15 @@ class UnionType(ResolvedType):
             name = "Omitted" + name
         elements = list(map(repr, self.elements))
         return name + f"({' | '.join(elements)})"
+
+    def refs(self) -> set[ResolvedType]:
+        """
+        Get all referenced struct types.
+        """
+        ret = set()
+        for ele in self.elements:
+            ret = ret.union(ele.refs())
+        return ret
 
 
 @dataclass(frozen=True)
@@ -1039,6 +1091,15 @@ class IntersectionType(ResolvedType):
         elements = list(map(repr, self.elements))
         return name + f"({' & '.join(elements)})"
 
+    def refs(self) -> set[ResolvedType]:
+        """
+        Get all referenced struct types.
+        """
+        ret = set()
+        for ele in self.elements:
+            ret = ret.union(ele.refs())
+        return ret
+
 
 @dataclass(frozen=True)
 class TupleType(ResolvedType):
@@ -1057,6 +1118,15 @@ class TupleType(ResolvedType):
         name = type(self).__name__.replace("Type", "")
         elements = list(map(repr, self.elements))
         return name + f"[{', '.join(elements)}]"
+
+    def refs(self) -> set[ResolvedType]:
+        """
+        Get all referenced struct types.
+        """
+        ret = set()
+        for ele in self.elements:
+            ret = ret.union(ele.refs())
+        return ret
 
 
 @dataclass(frozen=True)
@@ -1124,6 +1194,17 @@ class GenericStructInstanceType(StructType):
         name = type(self).__name__.replace("Type", "")
         rendered = list(map(str, self.type_args))
         return f'{name}["{self.name}<{", ".join(rendered)}>"]'
+
+    def refs(self) -> set[ResolvedType]:
+        """
+        Get all referenced struct types.
+        """
+        ret = set()
+        for arg in self.type_args:
+            ret = ret.union(arg.refs())
+        if self.typedef:
+            ret.add(self.parser.parse(self.name))
+        return ret
 
 
 @dataclass(frozen=True)
@@ -1294,6 +1375,14 @@ class OptionalType[T: ResolvedType](ResolvedType):
     def __repr__(self) -> str:
         return "Optional" + repr(self.inner)
 
+    def refs(self) -> set[ResolvedType]:
+        """
+        Get all referenced struct types.
+        """
+        # Need to define this since it's defined in ResolvedType
+        # and thus not proxied, but inherited from inner one.
+        return self.inner.refs()
+
     @property
     def is_optional(self) -> bool:
         return True
@@ -1355,6 +1444,12 @@ class ArrayType[T: ResolvedType](ResolvedType):
     def __repr__(self):
         return wrapped_repr(self.element_type, name_suffix="List")
 
+    def refs(self) -> set[ResolvedType]:
+        """
+        Get all referenced struct types.
+        """
+        return self.element_type.refs()
+
 
 class VariadicType[T](ResolvedType):
     """
@@ -1399,6 +1494,12 @@ class VariadicType[T](ResolvedType):
 
     def __repr__(self) -> str:
         return wrapped_repr(self.element_type, name_prefix="Variadic")
+
+    def refs(self) -> set[ResolvedType]:
+        """
+        Get all referenced struct types.
+        """
+        return self.element_type.refs()
 
 
 class ArrayOmissionMarker:
