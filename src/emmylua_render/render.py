@@ -83,6 +83,11 @@ class Doc:
                 continue
             yield obj
 
+    def is_mod(self, typ: ResolvedType) -> bool:
+        if not isinstance(typ, ClassType):
+            return False
+        return any(mod.typ == typ.name for mod in self.docs.modules.values())
+
 
 class DocExtension(Extension):
     tags = {"anchor", "section"}

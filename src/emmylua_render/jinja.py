@@ -294,13 +294,17 @@ def markdown_to_vimdoc(text: str, indent: int | None = None) -> str:
 
 
 def render_template(
-    template_path: Path, context: dict[str, Any] | None = None, **renderer_kwargs
+    template_path: Path,
+    globals: dict[str, Any] | None = None,
+    context: dict[str, Any] | None = None,
+    **renderer_kwargs,
 ) -> str:
     """
     Convenience function to render a template in one call.
 
     Args:
         template_path: Path to the template file
+        globals: Dictionary of global variables in context (regardless of template)
         context: Dictionary of variables to pass to the template
         **renderer_kwargs: Additional arguments for JinjaRenderer
 
@@ -314,17 +318,23 @@ def render_template(
     else:
         renderer_kwargs["fmt"] = "vimdoc"
     renderer = JinjaRenderer(template_path.parent, **renderer_kwargs)
+    for global_name, global_val in (globals or {}).items():
+        renderer.add_global(global_name, global_val)
     return renderer.render(template_path.name, context)
 
 
 def render_template_str(
-    template_str: str, context: dict[str, Any] | None = None, **renderer_kwargs
+    template_str: str,
+    globals: dict[str, Any] | None = None,
+    context: dict[str, Any] | None = None,
+    **renderer_kwargs,
 ) -> str:
     """
     Convenience function to render a string template in one call.
 
     Args:
         template: Template string
+        globals: Dictionary of global variables in context (regardless of template)
         context: Dictionary of variables to pass to the template
         **renderer_kwargs: Additional arguments for JinjaRenderer
 
@@ -336,4 +346,6 @@ def render_template_str(
     else:
         renderer_kwargs["fmt"] = "vimdoc"
     renderer = JinjaRenderer(None, **renderer_kwargs)
+    for global_name, global_val in (globals or {}).items():
+        renderer.add_global(global_name, global_val)
     return renderer.render_str(template_str, context)

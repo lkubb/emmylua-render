@@ -1,4 +1,5 @@
-{%- section "`{}` (Class)".format(cls.name) with anchor=cls.name literal=true %}
+{%- set kind = "Module" if doc.is_mod(cls) else "Class" %}
+{%- section "`{}` ({})".format(cls.name, kind) with anchor=cls.name literal=true %}
 
 {%- if cls.desc %}
 
